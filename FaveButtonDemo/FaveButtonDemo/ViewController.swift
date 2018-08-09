@@ -19,8 +19,8 @@ func color(_ rgbColor: Int) -> UIColor{
     )
 }
 
-class ViewController: UIViewController, FaveButtonDelegate{
-    
+class ViewController: UIViewController {
+
     @IBOutlet var heartButton: FaveButton?
     @IBOutlet var loveButton : FaveButton?
     
@@ -54,5 +54,3 @@ class ViewController: UIViewController, FaveButtonDelegate{
         loveButton?.displayAnimation()
     }
 }
-
-

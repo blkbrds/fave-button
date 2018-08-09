@@ -24,17 +24,21 @@
 
 import UIKit
 
+protocol RingDelegate: class {
+    func ring(_ Ring: Ring, didStopAnimation anim: CAAnimation, finished flag: Bool)
+}
+
 class Ring: UIView {
 
-    fileprivate struct Const{
-        static let collapseAnimation = "collapseAnimation"
-        static let sizeKey           = "sizeKey"
+    fileprivate struct Const {
+        static let sizeKey = "sizeKey"
     }
 
     var fillColor: UIColor!
     var radius: CGFloat!
     var lineWidth: CGFloat!
     var ringLayer: CAShapeLayer!
+    weak var delegate: RingDelegate?
 
     init(radius: CGFloat, lineWidth:CGFloat, fillColor: UIColor) {
         self.fillColor = fillColor
@@ -52,9 +56,9 @@ class Ring: UIView {
 
 
 // MARK: create
-extension Ring{
+extension Ring {
 
-    class func createRing(_ faveButton: FaveButton, radius: CGFloat, lineWidth: CGFloat, fillColor: UIColor) -> Ring{
+    class func createRing(_ faveButton: FaveButton, radius: CGFloat, lineWidth: CGFloat, fillColor: UIColor) -> Ring {
 
         let ring = Init(Ring(radius: radius, lineWidth:lineWidth, fillColor: fillColor)){
             $0.translatesAutoresizingMaskIntoConstraints = false
@@ -145,7 +149,7 @@ extension Ring{
         let circlePathAnimation = animationCirclePath(radius, duration: duration, delay: delay)
 
         circlePathAnimation.delegate = self
-        circlePathAnimation.setValue(Const.collapseAnimation, forKey: Const.collapseAnimation)
+        circlePathAnimation.setValue(FaveButton.Keys.collapseAnimation, forKey: FaveButton.Keys.collapseAnimation)
 
         ringLayer.add(lineWidthAnimation, forKey: nil)
         ringLayer.add(circlePathAnimation, forKey: nil)
@@ -207,10 +211,11 @@ extension Ring{
 }
 
 // MARK: CAAnimationDelegate
-extension Ring : CAAnimationDelegate{
+extension Ring : CAAnimationDelegate {
 
     func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
-        if let _ = anim.value(forKey: Const.collapseAnimation){
+        delegate?.ring(self, didStopAnimation: anim, finished: flag)
+        if let _ = anim.value(forKey: FaveButton.Keys.collapseAnimation){
             self.removeFromSuperview()
         }
     }

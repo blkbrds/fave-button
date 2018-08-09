@@ -24,6 +24,10 @@
 
 import UIKit
 
+protocol FaveIconDelegate: class {
+    func faveIcon(_ faveIcon: FaveIcon, didStopAnimation anim: CAAnimation, finished flag: Bool)
+}
+
 class FaveIcon: UIView {
 
     var iconColor: UIColor = .gray
@@ -32,6 +36,7 @@ class FaveIcon: UIView {
     var iconMask:  CALayer!
     var contentRegion: CGRect!
     var tweenValues: [CGFloat]?
+    weak var delegate: FaveIconDelegate?
 
     init(region: CGRect, icon: UIImage, color: UIColor) {
         self.iconColor      = color
@@ -114,6 +119,8 @@ extension FaveIcon {
         scaleAnimation.duration  = duration
         scaleAnimation.beginTime = CACurrentMediaTime() + selectedDelay
         scaleAnimation.fillMode = kCAFillModeForwards
+        scaleAnimation.setValue(FaveButton.Keys.scaleBiggerAnimation, forKey: FaveButton.Keys.scaleBiggerAnimation)
+        scaleAnimation.delegate = self
         iconMask.add(scaleAnimation, forKey: nil)
 
         let opacityAnimation = CABasicAnimation(keyPath: "opacity")
@@ -122,6 +129,9 @@ extension FaveIcon {
         opacityAnimation.toValue = 0.0
         opacityAnimation.beginTime = CACurrentMediaTime() + duration
         opacityAnimation.fillMode = kCAFillModeForwards
+        opacityAnimation.isRemovedOnCompletion = false
+        opacityAnimation.setValue(FaveButton.Keys.opacityAnimation, forKey: FaveButton.Keys.opacityAnimation)
+        opacityAnimation.delegate = self
         iconMask.add(opacityAnimation, forKey: nil)
 
         let scaleSmallerAnimation = CABasicAnimation(keyPath: "transform.scale")
@@ -130,7 +140,7 @@ extension FaveIcon {
         scaleSmallerAnimation.duration = 0.3
         scaleSmallerAnimation.beginTime = CACurrentMediaTime() + duration
         scaleSmallerAnimation.fillMode = kCAFillModeForwards
-        scaleSmallerAnimation.setValue("scaleSmallerAnimation", forKey: "scaleSmallerAnimation")
+        scaleSmallerAnimation.setValue(FaveButton.Keys.scaleSmallerAnimation, forKey: FaveButton.Keys.scaleSmallerAnimation)
         scaleSmallerAnimation.delegate = self
         iconMask.add(scaleSmallerAnimation, forKey: nil)
     }
@@ -156,7 +166,8 @@ extension FaveIcon {
 extension FaveIcon: CAAnimationDelegate {
 
     func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
-        if let _ = anim.value(forKey: "scaleSmallerAnimation") {
+        delegate?.faveIcon(self, didStopAnimation: anim, finished: flag)
+        if let _ = anim.value(forKey: FaveButton.Keys.scaleSmallerAnimation) {
             layer.removeAllAnimations()
             iconLayer.removeFromSuperlayer()
         }

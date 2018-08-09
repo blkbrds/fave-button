@@ -26,13 +26,16 @@ import UIKit
 
 public typealias DotColors = (first: UIColor, second: UIColor)
 
-public protocol FaveButtonDelegate {
+public protocol FaveButtonDelegate: class {
     func faveButton(_ faveButton: FaveButton, didSelected selected: Bool)
+    func faveButton(_ faveButton: FaveButton, didStopAnimation anim: CAAnimation, finished flag: Bool)
     func faveButtonDotColors(_ faveButton: FaveButton) -> [DotColors]?
 }
 
 // MARK: Default implementation
 public extension FaveButtonDelegate {
+    func faveButton(_ faveButton: FaveButton, didSelected selected: Bool) { }
+    func faveButton(_ faveButton: FaveButton, didStopAnimation anim: CAAnimation, finished flag: Bool) { }
     func faveButtonDotColors(_ faveButton: FaveButton) -> [DotColors]?{ return nil }
 }
 
@@ -59,7 +62,7 @@ open class FaveButton: UIButton {
     @IBInspectable open var circleToColor: UIColor   = UIColor(red: 205/255, green: 143/255, blue: 246/255, alpha: 1)
     @IBInspectable open var sparkGroupCount: Int = 9
 
-    @IBOutlet open weak var delegate: AnyObject?
+    weak var delegate: FaveButtonDelegate?
 
 
     fileprivate var faveIconImage: UIImage?
@@ -153,7 +156,7 @@ extension FaveButton {
 extension FaveButton {
 
     fileprivate func dotColors(atIndex index: Int) -> DotColors {
-        if case let delegate as FaveButtonDelegate = delegate , nil != delegate.faveButtonDotColors(self){
+        if let delegate = delegate , nil != delegate.faveButtonDotColors(self){
             let colors     = delegate.faveButtonDotColors(self)!
             let colorIndex = 0..<colors.count ~= index ? index : index % colors.count
 
@@ -181,8 +184,9 @@ extension FaveButton {
             fatalError("please provide an image for normal state.")
         }
         faveIcon  = createFaveIcon(faveIconImage)
+        faveIcon.delegate = self
         isSelected = true
-        guard case let delegate as FaveButtonDelegate = self.delegate else{
+        guard let delegate = self.delegate else {
             return
         }
         let delay = DispatchTime.now() + Double(Int64(Double(NSEC_PER_SEC) * Const.duration)) / Double(NSEC_PER_SEC)
@@ -203,6 +207,7 @@ extension FaveButton {
             let igniteFromRadius = radius*0.8
             let igniteToRadius   = radius*1.1
             let ring   = Ring.createRing(self, radius: 0.01, lineWidth: 3, fillColor: self.circleFromColor)
+            ring.delegate = self
             let sparks = createSparks(igniteFromRadius)
             ring.animateToRadius(radius, toColor: circleToColor, duration: Const.expandDuration, delay: 0)
             ring.animateColapse(radius, duration: Const.collapseDuration, delay: Const.expandDuration)
@@ -212,5 +217,29 @@ extension FaveButton {
                 $0.animateIgniteHide(0.7, delay: 0.2)
             }
         }
+    }
+}
+
+extension FaveButton: FaveIconDelegate {
+
+    func faveIcon(_ faveIcon: FaveIcon, didStopAnimation anim: CAAnimation, finished flag: Bool) {
+        delegate?.faveButton(self, didStopAnimation: anim, finished: flag)
+    }
+}
+
+extension FaveButton: RingDelegate {
+
+    func ring(_ Ring: Ring, didStopAnimation anim: CAAnimation, finished flag: Bool) {
+        delegate?.faveButton(self, didStopAnimation: anim, finished: flag)
+    }
+}
+
+extension FaveButton {
+
+    struct Keys {
+        static let opacityAnimation = "opacityAnimation"
+        static let scaleSmallerAnimation = "scaleSmallerAnimation"
+        static let scaleBiggerAnimation = "scaleBiggerAnimation"
+        static let collapseAnimation = "collapseAnimation"
     }
 }
